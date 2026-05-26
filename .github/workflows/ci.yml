@@ -65,6 +65,6 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm prisma migrate deploy
-      - run: pnpm prisma db push
+      - run: pnpm prisma db push --accept-data-loss
       - run: pnpm prisma generate
       - run: pnpm test
