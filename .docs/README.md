@@ -3,7 +3,7 @@
 Este documento detalla el análisis del sistema, los problemas de diseño o implementación identificados en la arquitectura inicial y las soluciones técnicas aplicadas para resolverlos.
 
 <p align="center">
-  <img src="ruta/ejemplo..." alt="indique logo decorativo" width="80"/>
+  <img src="img/wip.png" alt="Herramientas de trabajo entrecruzadas" width="80"/>
 </p>
 
 
