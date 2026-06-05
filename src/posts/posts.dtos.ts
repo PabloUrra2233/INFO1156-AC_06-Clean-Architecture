@@ -17,7 +17,9 @@ const NO_HTML_MESSAGE = "No se permiten etiquetas HTML"
 export class CreatePostDto {
     @IsString({ message: "El título debe ser un texto" })
     @IsNotEmpty({ message: "El título no puede estar vacío" })
-    @Length(3, 120, { message: "El título debe tener entre 3 y 120 caracteres" })
+    @Length(3, 120, {
+        message: "El título debe tener entre 3 y 120 caracteres",
+    })
     @Matches(NO_HTML_PATTERN, { message: NO_HTML_MESSAGE })
     title!: string
 

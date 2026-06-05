@@ -1,23 +1,46 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common"
+import {
+    BadRequestException,
+    Body,
+    Controller,
+    Get,
+    Post,
+    Query,
+} from "@nestjs/common"
 
-import { PostsService } from "@/posts/posts.service"
-import { FeedRankingStrategyFactory } from "@/posts/feed-ranking.strategy"
+import { CreatePostUseCase } from "@/posts/application/use-cases/create-post.use-case"
+import { GetRankedFeedUseCase } from "@/posts/application/use-cases/get-ranked-feed.use-case"
+import { PostModerationException } from "@/posts/domain/exceptions/post-moderation.exception"
 import { CreatePostDto, FeedQueryDto } from "@/posts/posts.dtos"
+import { PostsService } from "@/posts/posts.service"
 
 @Controller("api/posts")
 export class PostsController {
     constructor(
         private readonly postsService: PostsService,
-        private readonly feedRankingFactory: FeedRankingStrategyFactory,
+        private readonly createPostUseCase: CreatePostUseCase,
+        private readonly getRankedFeedUseCase: GetRankedFeedUseCase,
     ) {}
 
     @Post()
     async create(@Body() body: CreatePostDto) {
-        const created = await this.postsService.create(body)
+        try {
+            const created = await this.createPostUseCase.execute({
+                title: body.title,
+                description: body.description,
+                imageUrl: body.imageUrl,
+                categoryId: body.categoryId,
+            })
 
-        return {
-            ok: true,
-            payload: created,
+            return {
+                ok: true,
+                payload: created,
+            }
+        } catch (error) {
+            if (error instanceof PostModerationException) {
+                throw new BadRequestException(error.message)
+            }
+
+            throw error
         }
     }
 
@@ -33,16 +56,9 @@ export class PostsController {
 
     @Get("feed")
     async getFeed(@Query() query: FeedQueryDto) {
-        const mode = query.mode ?? "latest"
-        const feedPosts = await this.postsService.getFeedPosts(query.categoryId)
-        const rankedPosts = this.feedRankingFactory
-            .forMode(mode)
-            .rank(feedPosts)
-
-        return {
-            mode,
-            count: rankedPosts.length,
-            rows: rankedPosts,
-        }
+        return this.getRankedFeedUseCase.execute({
+            categoryId: query.categoryId,
+            mode: query.mode,
+        })
     }
 }
