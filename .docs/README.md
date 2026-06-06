@@ -134,3 +134,34 @@ classDiagram
     GetRankedFeedUseCase --> IPostRepository
     GetRankedFeedUseCase --> FeedRankingStrategyFactory
 ```
+---
+### ❗️ Problema 4: [Indique nombre del problema...]
+* **Descripción:** [Indique descripción del problema...].
+* **Impacto:** [Indique el impacto que poseía el problema en el proyecto...].
+
+### 🛠 Solución implementada:
+* **Estrategia:** [Indique su solución/estrategia para solucionar el problema...].
+* **Justificación:** Indique la razón de esa estrategia como solución al problema...
+
+<!--Aqui el diagrama de clases y/o codigo resumido de apoyo.-->
+<!--Se recomienda usar PlantUML para los diagramas, aunque otros formatos son aceptados igual.-->
+<p align="center">
+  <img src="ruta/ejemplo..." alt="indicar tipo de patron..." width="80"/>
+</p>
+
+---
+### ❗️ Problema 5: [Indique nombre del problema...]
+* **Descripción:** [Indique descripción del problema...].
+* **Impacto:** [Indique el impacto que poseía el problema en el proyecto...].
+
+### 🛠 Solución implementada:
+* **Estrategia:** [Indique su solución/estrategia para solucionar el problema...].
+* **Justificación:** Indique la razón de esa estrategia como solución al problema...
+
+<!--Aqui el diagrama de clases y/o codigo resumido de apoyo.-->
+<!--Se recomienda usar PlantUML para los diagramas, aunque otros formatos son aceptados igual.-->
+<p align="center">
+  <img src="ruta/ejemplo..." alt="indicar tipo de patron..." width="80"/>
+</p>
+
+---
