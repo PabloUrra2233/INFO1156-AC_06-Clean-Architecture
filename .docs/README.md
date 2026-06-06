@@ -135,33 +135,182 @@ classDiagram
     GetRankedFeedUseCase --> FeedRankingStrategyFactory
 ```
 ---
-### ❗️ Problema 4: [Indique nombre del problema...]
-* **Descripción:** [Indique descripción del problema...].
-* **Impacto:** [Indique el impacto que poseía el problema en el proyecto...].
+
+### ❗️ Problema 4: Lógica de aplicación dentro del controlador
+
+* **Descripción:** El controlador de publicaciones contenía lógica de aplicación al construir el feed. En lugar de limitarse a recibir la petición HTTP y delegar el trabajo, `PostsController` obtenía los posts mediante el servicio y luego aplicaba directamente la estrategia de ranking usando `FeedRankingStrategyFactory`.
+
+* **Impacto:** Esto provocaba que la capa de presentación tuviera responsabilidades que no le correspondían. El controlador quedaba acoplado a reglas de aplicación, dificultando la mantención, las pruebas y la reutilización de la lógica del feed en otros contextos distintos a HTTP.
 
 ### 🛠 Solución implementada:
-* **Estrategia:** [Indique su solución/estrategia para solucionar el problema...].
-* **Justificación:** Indique la razón de esa estrategia como solución al problema...
 
-<!--Aqui el diagrama de clases y/o codigo resumido de apoyo.-->
-<!--Se recomienda usar PlantUML para los diagramas, aunque otros formatos son aceptados igual.-->
-<p align="center">
-  <img src="ruta/ejemplo..." alt="indicar tipo de patron..." width="80"/>
-</p>
+* **Estrategia:** Se creó el caso de uso `GetRankedFeedUseCase`, encargado de obtener los posts del feed y aplicar el ranking correspondiente. El controlador ahora solo recibe los parámetros de la request y delega la operación al caso de uso.
+
+* **Justificación:** Al mover la orquestación del feed a la capa de aplicación, el controlador queda como una capa delgada. Esto respeta Clean Architecture, ya que la presentación no debería contener reglas de negocio ni coordinación de procesos internos.
+
+#### Código resumido
+
+Antes, el controlador hacía la orquestación:
+
+```ts
+const mode = query.mode ?? "latest"
+const feedPosts = await this.postsService.getFeedPosts(query.categoryId)
+const rankedPosts = this.feedRankingFactory.forMode(mode).rank(feedPosts)
+```
+
+Después, el controlador solo delega:
+
+```ts
+@Get("feed")
+async getFeed(@Query() query: FeedQueryDto) {
+    return this.getRankedFeedUseCase.execute({
+        categoryId: query.categoryId,
+        mode: query.mode,
+    })
+}
+```
+
+El caso de uso concentra la lógica de aplicación:
+
+```ts
+async execute(input: GetRankedFeedInput) {
+    const mode = input.mode ?? "latest"
+    const feedPosts = await this.postRepository.getFeedPosts(input.categoryId)
+    const rankedPosts = this.feedRankingFactory.forMode(mode).rank(feedPosts)
+
+    return {
+        mode,
+        count: rankedPosts.length,
+        rows: rankedPosts,
+    }
+}
+```
 
 ---
-### ❗️ Problema 5: [Indique nombre del problema...]
-* **Descripción:** [Indique descripción del problema...].
-* **Impacto:** [Indique el impacto que poseía el problema en el proyecto...].
+
+### ❗️ Problema 5: Uso directo de DTOs y modelo de dominio anémico
+
+* **Descripción:** La lógica de negocio recibía directamente `CreatePostDto`, una clase perteneciente a la capa de presentación. Además, los datos obtenidos desde Prisma eran usados como objetos de aplicación sin pasar claramente por entidades de dominio propias.
+
+* **Impacto:** Esto mezclaba responsabilidades entre capas. Los DTOs están pensados para validar y transportar datos desde HTTP, no para representar reglas o estructuras internas del dominio. Además, depender directamente de los objetos generados por Prisma hacía que la lógica de negocio quedara más acoplada a detalles de infraestructura.
 
 ### 🛠 Solución implementada:
-* **Estrategia:** [Indique su solución/estrategia para solucionar el problema...].
-* **Justificación:** Indique la razón de esa estrategia como solución al problema...
 
-<!--Aqui el diagrama de clases y/o codigo resumido de apoyo.-->
-<!--Se recomienda usar PlantUML para los diagramas, aunque otros formatos son aceptados igual.-->
-<p align="center">
-  <img src="ruta/ejemplo..." alt="indicar tipo de patron..." width="80"/>
-</p>
+* **Estrategia:** Se separó la entrada HTTP del caso de uso mediante un tipo propio `CreatePostInput`. Además, se incorporaron entidades de dominio como `PostEntity` y `PostFeedEntity`, utilizadas por el repositorio para devolver estructuras propias del dominio en vez de objetos crudos de Prisma.
+
+* **Justificación:** Esta separación permite que los casos de uso no dependan directamente de DTOs ni de modelos generados por el ORM. Con esto, la lógica de aplicación queda más limpia, más fácil de probar y menos dependiente de detalles externos.
+
+#### Código resumido
+
+El DTO queda en la capa de presentación:
+
+```ts
+@Post()
+async create(@Body() body: CreatePostDto) {
+    const created = await this.createPostUseCase.execute({
+        title: body.title,
+        description: body.description,
+        imageUrl: body.imageUrl,
+        categoryId: body.categoryId,
+    })
+
+    return {
+        ok: true,
+        payload: created,
+    }
+}
+```
+
+El caso de uso recibe una estructura propia:
+
+```ts
+type CreatePostInput = {
+    title: string
+    description: string
+    imageUrl: string
+    categoryId?: string
+}
+```
+
+El repositorio retorna entidades de dominio:
+
+```ts
+return new PostEntity({
+    id: post.id,
+    title: post.title,
+    description: post.description,
+    imageUrl: post.imageUrl,
+    categoryId: post.categoryId,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+})
+```
 
 ---
+
+## Diagrama resumido de los problemas 4 y 5
+
+```mermaid
+classDiagram
+    class PostsController {
+        +create(body)
+        +getFeed(query)
+    }
+
+    class CreatePostDto {
+        +title
+        +description
+        +imageUrl
+        +categoryId
+    }
+
+    class CreatePostUseCase {
+        +execute(input)
+    }
+
+    class GetRankedFeedUseCase {
+        +execute(input)
+    }
+
+    class IPostRepository {
+        <<interface>>
+        +create(data)
+        +getFeedPosts(categoryId)
+    }
+
+    class PrismaPostRepository {
+        +create(data)
+        +getFeedPosts(categoryId)
+    }
+
+    class PostEntity {
+        +id
+        +title
+        +description
+        +imageUrl
+        +categoryId
+        +createdAt
+        +updatedAt
+    }
+
+    class PostFeedEntity {
+        +categoryName
+        +likesCount
+        +commentsCount
+        +relevanceScore
+    }
+
+    class FeedRankingStrategyFactory {
+        +forMode(mode)
+    }
+
+    PostsController --> CreatePostDto
+    PostsController --> CreatePostUseCase
+    PostsController --> GetRankedFeedUseCase
+    CreatePostUseCase --> IPostRepository
+    GetRankedFeedUseCase --> IPostRepository
+    GetRankedFeedUseCase --> FeedRankingStrategyFactory
+    PrismaPostRepository ..|> IPostRepository
+    PrismaPostRepository --> PostEntity
+    PrismaPostRepository --> PostFeedEntity
+    PostFeedEntity --|> PostEntity
