@@ -59,4 +59,78 @@ if (!moderation.approved) {
 ---
 ---
 ...
-<!--Si se requiere, siga agregando problemas con el mismo formato con tal de mantener el orden.-->
+### ❗️ Problema 3: `PostsService` con demasiadas responsabilidades
+
+* **Descripción:** `PostsService` concentraba múltiples operaciones: crear publicaciones, listar publicaciones, buscar por ID y obtener los datos del feed. Además, el controlador de posts contenía lógica de aplicación al obtener los posts del feed y aplicar directamente una estrategia de ranking.
+
+* **Impacto:** Esta estructura rompía el principio de responsabilidad única, ya que una misma clase podía cambiar por muchos motivos distintos. También hacía que el controlador dejara de ser una capa delgada, porque no solo recibía la petición HTTP, sino que también participaba en la orquestación del caso de uso del feed.
+
+### 🛠 Solución implementada:
+
+* **Estrategia:** Se separó la lógica en casos de uso específicos. `CreatePostUseCase` quedó encargado de crear publicaciones y validar moderación, mientras que `GetRankedFeedUseCase` quedó encargado de obtener los posts del feed y aplicar el ranking correspondiente mediante `FeedRankingStrategyFactory`.
+
+* **Justificación:** Al dividir la lógica en casos de uso, cada clase tiene una responsabilidad clara. El controlador queda limitado a recibir parámetros, llamar al caso de uso correspondiente y devolver la respuesta. Esto mejora la mantenibilidad, facilita las pruebas y acerca el servidor a Clean Architecture.
+
+```ts
+async getFeed(@Query() query: FeedQueryDto) {
+    return this.getRankedFeedUseCase.execute({
+        categoryId: query.categoryId,
+        mode: query.mode,
+    })
+}
+```
+
+```ts
+async execute(input: GetRankedFeedInput) {
+    const mode = input.mode ?? "latest"
+    const feedPosts = await this.postRepository.getFeedPosts(input.categoryId)
+    const rankedPosts = this.feedRankingFactory.forMode(mode).rank(feedPosts)
+
+    return {
+        mode,
+        count: rankedPosts.length,
+        rows: rankedPosts,
+    }
+}
+```
+
+---
+
+## Diagrama de clases resumido de la refactorización
+
+```mermaid
+classDiagram
+    class PostsController {
+        +create(body)
+        +getFeed(query)
+    }
+
+    class CreatePostUseCase {
+        +execute(input)
+    }
+
+    class GetRankedFeedUseCase {
+        +execute(input)
+    }
+
+    class PostModerationException
+
+    class IPostRepository {
+        <<interface>>
+        +create(data)
+        +findAll()
+        +findById(id)
+        +getFeedPosts(categoryId)
+    }
+
+    class FeedRankingStrategyFactory {
+        +forMode(mode)
+    }
+
+    PostsController --> CreatePostUseCase
+    PostsController --> GetRankedFeedUseCase
+    CreatePostUseCase --> IPostRepository
+    CreatePostUseCase ..> PostModerationException
+    GetRankedFeedUseCase --> IPostRepository
+    GetRankedFeedUseCase --> FeedRankingStrategyFactory
+```
