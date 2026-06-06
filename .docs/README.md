@@ -26,20 +26,37 @@ En esta sección se describen las deficiencias, bugs o limitaciones técnicas en
 </p>
 
 ---
-### ❗️ Problema 2: [Indique nombre del problema...]
-* **Descripción:** [Indique descripción del problema...].
-* **Impacto:** [Indique el impacto que poseía el problema en el proyecto...].
+---
+### ❗️ Problema 2: Lógica de negocio acoplada a NestJS y HTTP
+
+* **Descripción:** La lógica de creación de publicaciones estaba mezclada con detalles propios del framework NestJS. En particular, `PostsService` lanzaba directamente `BadRequestException` cuando una publicación era rechazada por moderación. Además, el método `create` recibía directamente `CreatePostDto`, que pertenece a la capa de presentación.
+
+* **Impacto:** Esto generaba acoplamiento entre la lógica de negocio y HTTP. Si se quisiera reutilizar esta lógica fuera de un controlador REST, por ejemplo en tests unitarios, jobs internos o WebSockets, seguiría dependiendo de excepciones propias de NestJS. También dificultaba probar la regla de negocio de moderación de forma aislada.
 
 ### 🛠 Solución implementada:
-* **Estrategia:** [Indique su solución/estrategia para solucionar el problema...].
-* **Justificación:** Indique la razón de esa estrategia como solución al problema...
 
-<!--Aqui el diagrama de clases y/o codigo resumido de apoyo.-->
-<!--Se recomienda usar PlantUML para los diagramas, aunque otros formatos son aceptados igual.-->
-<p align="center">
-  <img src="ruta/ejemplo..." alt="indicar tipo de patron..." width="80"/>
-</p>
+* **Estrategia:** Se creó una excepción propia del dominio llamada `PostModerationException` y se movió la lógica de creación de publicaciones a `CreatePostUseCase`. El caso de uso ejecuta la moderación y, si el contenido es rechazado, lanza una excepción de dominio. Luego, el controlador se encarga de traducir esa excepción a una respuesta HTTP mediante `BadRequestException`.
 
+* **Justificación:** Con este cambio, la capa de aplicación expresa reglas del negocio sin depender directamente de HTTP. La traducción a códigos de estado queda en la capa de presentación, respetando la separación de responsabilidades propuesta por Clean Architecture.
+
+```ts
+export class PostModerationException extends Error {
+    constructor(message = "Post bloqueado por moderación") {
+        super(message)
+        this.name = "PostModerationException"
+    }
+}
+```
+
+```ts
+if (!moderation.approved) {
+    throw new PostModerationException(
+        moderation.reason ?? "Post bloqueado por moderación",
+    )
+}
+```
+
+---
 ---
 ...
 <!--Si se requiere, siga agregando problemas con el mismo formato con tal de mantener el orden.-->
