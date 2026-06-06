@@ -25,7 +25,7 @@ En esta sección se describen las deficiencias, bugs o limitaciones técnicas en
   <img src="img/problema1.png" alt="Patron de Diseño Repositorio" width="550"/>
 </p>
 
----
+
 ---
 ### ❗️ Problema 2: Lógica de negocio acoplada a NestJS y HTTP
 
@@ -56,7 +56,7 @@ if (!moderation.approved) {
 }
 ```
 
----
+
 ---
 ...
 ### ❗️ Problema 3: `PostsService` con demasiadas responsabilidades
