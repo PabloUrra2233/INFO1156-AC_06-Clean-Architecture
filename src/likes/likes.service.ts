@@ -4,14 +4,14 @@ import {
     NotFoundException,
 } from "@nestjs/common"
 import { AddLikeDto } from "@/posts/posts.dtos"
-import { PostsService } from "@/posts/posts.service"
+import { FindPostByIdUseCase } from "@/posts/application/use-cases/find-post-by-id.use-case"
 import { PrismaService } from "@/shared/prisma.service"
 
 @Injectable()
 export class LikesService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly postsService: PostsService,
+        private readonly findPostByIdUseCase: FindPostByIdUseCase,
     ) {}
 
     async create(postId: string, data: AddLikeDto) {
@@ -34,7 +34,7 @@ export class LikesService {
     }
 
     private async assertPostExists(postId: string) {
-        const post = await this.postsService.findById(postId)
+        const post = await this.findPostByIdUseCase.execute(postId)
 
         if (!post) {
             throw new NotFoundException("Post no encontrado")

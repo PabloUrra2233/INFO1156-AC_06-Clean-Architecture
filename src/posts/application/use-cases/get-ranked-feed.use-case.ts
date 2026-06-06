@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common"
 
-import { FeedRankingStrategyFactory } from "@/posts/feed-ranking.strategy"
+import { FeedRankingStrategyFactory } from "@/posts/domain/strategies/feed-ranking.strategy"
 import {
     IPostRepository,
     POST_REPOSITORY_TOKEN,

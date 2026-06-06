@@ -8,16 +8,16 @@ import {
 } from "@nestjs/common"
 
 import { CreatePostUseCase } from "@/posts/application/use-cases/create-post.use-case"
+import { FindAllPostsUseCase } from "@/posts/application/use-cases/find-all-posts.use-case"
 import { GetRankedFeedUseCase } from "@/posts/application/use-cases/get-ranked-feed.use-case"
 import { PostModerationException } from "@/posts/domain/exceptions/post-moderation.exception"
 import { CreatePostDto, FeedQueryDto } from "@/posts/posts.dtos"
-import { PostsService } from "@/posts/posts.service"
 
 @Controller("api/posts")
 export class PostsController {
     constructor(
-        private readonly postsService: PostsService,
         private readonly createPostUseCase: CreatePostUseCase,
+        private readonly findAllPostsUseCase: FindAllPostsUseCase,
         private readonly getRankedFeedUseCase: GetRankedFeedUseCase,
     ) {}
 
@@ -46,12 +46,7 @@ export class PostsController {
 
     @Get()
     async findAll() {
-        const posts = await this.postsService.findAll()
-
-        return {
-            total: posts.length,
-            items: posts,
-        }
+        return this.findAllPostsUseCase.execute()
     }
 
     @Get("feed")

@@ -5,14 +5,14 @@ import {
 } from "@nestjs/common"
 import { CreateCommentDto } from "@/posts/posts.dtos"
 import { ModerationService } from "@/moderation/moderation.service"
-import { PostsService } from "@/posts/posts.service"
+import { FindPostByIdUseCase } from "@/posts/application/use-cases/find-post-by-id.use-case"
 import { PrismaService } from "@/shared/prisma.service"
 
 @Injectable()
 export class CommentsService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly postsService: PostsService,
+        private readonly findPostByIdUseCase: FindPostByIdUseCase,
         private readonly moderationService: ModerationService,
     ) {}
 
@@ -50,7 +50,7 @@ export class CommentsService {
     }
 
     private async assertPostExists(postId: string) {
-        const post = await this.postsService.findById(postId)
+        const post = await this.findPostByIdUseCase.execute(postId)
         if (!post) {
             throw new NotFoundException("Post no encontrado")
         }

@@ -1,20 +1,15 @@
 import { Injectable } from "@nestjs/common"
 
-export type FeedPost = {
-    createdAt: Date
-    likesCount: number
-    commentsCount: number
-    relevanceScore: number
-}
+import { PostFeedEntity } from "@/posts/domain/entities/post.entity"
 
 export type FeedMode = "latest" | "mostLiked" | "mostCommented" | "relevance"
 
 interface FeedRankingStrategy {
-    rank(posts: FeedPost[]): FeedPost[]
+    rank(posts: PostFeedEntity[]): PostFeedEntity[]
 }
 
 class LatestRankingStrategy implements FeedRankingStrategy {
-    rank(posts: FeedPost[]): FeedPost[] {
+    rank(posts: PostFeedEntity[]): PostFeedEntity[] {
         return [...posts].sort(
             (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
         )
@@ -22,19 +17,19 @@ class LatestRankingStrategy implements FeedRankingStrategy {
 }
 
 class MostLikedRankingStrategy implements FeedRankingStrategy {
-    rank(posts: FeedPost[]): FeedPost[] {
+    rank(posts: PostFeedEntity[]): PostFeedEntity[] {
         return [...posts].sort((a, b) => b.likesCount - a.likesCount)
     }
 }
 
 class MostCommentedRankingStrategy implements FeedRankingStrategy {
-    rank(posts: FeedPost[]): FeedPost[] {
+    rank(posts: PostFeedEntity[]): PostFeedEntity[] {
         return [...posts].sort((a, b) => b.commentsCount - a.commentsCount)
     }
 }
 
 class RelevanceRankingStrategy implements FeedRankingStrategy {
-    rank(posts: FeedPost[]): FeedPost[] {
+    rank(posts: PostFeedEntity[]): PostFeedEntity[] {
         return [...posts].sort((a, b) => b.relevanceScore - a.relevanceScore)
     }
 }
